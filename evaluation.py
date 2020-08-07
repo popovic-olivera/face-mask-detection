@@ -12,8 +12,8 @@ def evaluate_model(labels, predictions, probabilities=None, msg=None):
     print(f'Recall(with mask): {metrics.recall_score(labels, predictions)}')
     print(f'F1: {metrics.f1_score(labels, predictions)}')
 
-    precision, recall, _ = metrics.precision_recall_curve(labels, probabilities)
-    plot_curve(precision, recall)
+    # precision, recall, _ = metrics.precision_recall_curve(labels, probabilities)
+    # plot_curve(precision, recall)
 
 
 def plot_curve(precision, recall):
