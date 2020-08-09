@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
     def initGUI(self):
         self.setWindowTitle("Face mask detection")
         self.setFixedSize(MainWindow.WIDTH, MainWindow.HEIGHT)
-        self.setWindowIcon(QIcon('icon.png'))
+        self.setWindowIcon(QIcon('assets/icon.png'))
 
         self.set_background()
 
@@ -31,17 +31,28 @@ class MainWindow(QMainWindow):
         title.move(round(MainWindow.WIDTH / 2 - title.width() / 2), 100)
         
         button = QPushButton('Load image or video', self)
-        button.setAutoFillBackground(True)
-        # button.setStyleSheet("background-color : yellow")
-        buttonFont = QFont('Arial', 20)
+        buttonFont = QFont('Arial', 30)
         button.setFont(buttonFont)
         button.adjustSize() 
         button.setToolTip('Choose file on which you want to label faces with and without masks')
         button.move(round(MainWindow.WIDTH / 2 - button.width() / 2), 500)
         button.clicked.connect(self.load)
 
+        button2 = QPushButton('Live detection', self)
+        button2.setFont(buttonFont)
+        button2.adjustSize() 
+        button2.setToolTip('Open camera')
+        button2.move(round(MainWindow.WIDTH / 2 - button2.width() / 2), 600)
+        button2.clicked.connect(self.open_camera)
+
+        button3 = QPushButton('Leave', self)
+        button3.setFont(buttonFont)
+        button3.adjustSize()
+        button3.move(round(MainWindow.WIDTH / 2 - button3.width() / 2), 700)
+        button3.clicked.connect(sys.exit)
+
     def set_background(self):
-        oImage = QImage("back.png")
+        oImage = QImage("assets/background.png")
         sImage = oImage.scaled(QSize(1200, 800))
         palette = QPalette()
         palette.setBrush(QPalette.Window, QBrush(sImage))                        
@@ -60,6 +71,11 @@ class MainWindow(QMainWindow):
             on_video(file)
         else:
             on_image(file)
+
+    @pyqtSlot()
+    def open_camera(self):
+        on_video('', live=True)
+
 
 def window():
     app = QApplication(sys.argv)
