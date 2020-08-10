@@ -1,6 +1,7 @@
 from facenet_pytorch import MTCNN
 import time
 import cv2
+import numpy as np
 import torch
 import torchvision
 import matplotlib.pyplot as plt
@@ -10,7 +11,7 @@ detector = MTCNN(min_face_size=20)
 model = torch.load('models/mobilenet_LRDL_80_20_epochs20_acc0992274.pt', map_location=torch.device('cpu'))
 
 
-def draw_box(image, resized, faces, labels, class_names, video):
+def draw_box(image, resized, faces, labels, probabilities, class_names, video):
     im_height, im_width, _ = image.shape
     res_height, res_width, _ = resized.shape
 
@@ -30,7 +31,7 @@ def draw_box(image, resized, faces, labels, class_names, video):
         else:
             color = (0, 255, 0) if labels[i] else (255, 0, 0)
 
-        cv2.putText(image, class_names[labels[i]], (x, y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
+        cv2.putText(image, f'{class_names[labels[i]]}: {probabilities[i][1]:.2f}', (x, y - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
         cv2.rectangle(image, (x, y), (x_right, y_bottom), color, 2)
         
     return image
@@ -42,18 +43,18 @@ def complete_model(image, video=False):
     height, width, _ = image.shape
 
     scale_percent = 50
-    width = max(int(width * scale_percent / 100), 224)
-    height = max(int(height * scale_percent / 100), 224)
+    width = int(width * scale_percent / 100)
+    height = int(height * scale_percent / 100)
     resized = cv2.resize(image, (width, height), interpolation = cv2.INTER_AREA)
-
-    faces, _ = detector.detect(resized)
+    
+    faces, _, landmarks = detector.detect(resized, landmarks=True)
 
     if faces is None:
         return image
 
-    time_elapsed = time.time() - start_time
-    print(f'Time spent: {time_elapsed}')
-    start_time = time.time()
+    # time_elapsed = time.time() - start_time
+    # print(f'Time spent: {time_elapsed}')
+    # start_time = time.time()
     
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -62,13 +63,23 @@ def complete_model(image, video=False):
 
     batch_images = []
 
-    for face in faces:
+    for face, landmark in zip(faces, landmarks):
+        vec = landmark[1] - landmark[0]
+        vec_norm = vec / np.linalg.norm(vec)
+        angle = np.degrees(np.arccos(np.dot(vec_norm, np.array([1, 0]))))
+
+        rot_mat = cv2.getRotationMatrix2D(tuple(landmark[0]), -angle if vec[1] <= 0 else angle, 1.0)
+        result = cv2.warpAffine(resized, rot_mat, resized.shape[1::-1], flags=cv2.INTER_LINEAR)
+
         startX, startY, endX, endY = face.round().astype('int32')
         
         (startX, startY) = (max(0, startX), max(0, startY))
         (endX, endY) = (min(width - 1, endX), min(height - 1, endY))
 
-        cropped_face = resized[startY:endY, startX:endX]
+        cropped_face = result[startY:endY, startX:endX]
+        # cv2.imwrite(f'rotated {face[0]}.png', cv2.cvtColor(cropped_face, cv2.COLOR_RGB2BGR))
+        # cv2.imwrite(f'original {face[0]}.png', cv2.cvtColor(resized[startY:endY, startX:endX], cv2.COLOR_RGB2BGR))
+        
         cropped_face = cv2.resize(cropped_face, (224, 224))
 
         cropped_face = transform(cropped_face)
@@ -77,12 +88,16 @@ def complete_model(image, video=False):
 
     batch_torch = torch.stack(batch_images)
     output = model(batch_torch)
-    _, predicted = torch.max(output, 1)
+    
+    probabilities = torch.softmax(output, dim=1)
 
-    time_elapsed = time.time() - start_time
-    print(f'Time spent: {time_elapsed}')
+    # _, predicted = torch.max(output, 1)
 
-    return draw_box(image, resized, faces, predicted, ['WITHOUT MASK', 'WITH MASK'], video)
+    predicted = torch.tensor([1 if p[1] > 0.55 else 0 for p in probabilities])
+
+    # time_elapsed = time.time() - start_time    # print(f'Time spent: {time_elapsed}')
+
+    return draw_box(image, resized, faces, predicted, probabilities, ['WITHOUT MASK', 'WITH MASK'], video)
 
 
 def on_image(image_name):
@@ -90,7 +105,7 @@ def on_image(image_name):
     cv2.imshow('Model output', cv2.cvtColor(complete_model(image), cv2.COLOR_RGB2BGR))
 
 
-def on_video(video_name, live=False):
+def on_video(video_name='', output_filename='', live=False):
     if live:
         cap = cv2.VideoCapture(0)
     else:
@@ -102,25 +117,25 @@ def on_video(video_name, live=False):
     if not live:
         frame_width = int(cap.get(3))
         frame_height = int(cap.get(4))
-        out = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (frame_width, frame_height))
+        out = cv2.VideoWriter(output_filename + '.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame_width, frame_height))
 
     # Read until video is completed
-    while(cap.isOpened()):
+    while cap.isOpened():
         ret, frame = cap.read()
 
         if ret == True:
+            frame = cv2.flip(frame, 1)
             new_frame = complete_model(frame, True)
 
             if not live:
                 out.write(new_frame)
+            else:
+                cv2.imshow('Output', new_frame)
+                key = cv2.waitKey(10) & 0xFF
 
-            # Display the resulting frame
-            cv2.imshow('Output', new_frame)
-            key = cv2.waitKey(10) & 0xFF
-
-            # Press Q on keyboard to  exit
-            if key == ord('q'):
-                break
+                # Press Q on keyboard to  exit
+                if key == ord('q'):
+                    break
             
         else: 
             break

@@ -45,6 +45,12 @@ class MainWindow(QMainWindow):
         button2.move(round(MainWindow.WIDTH / 2 - button2.width() / 2), 600)
         button2.clicked.connect(self.open_camera)
 
+        label = QLabel('Pres Q to stop recording', self)
+        labelFont = QFont('Arial', 15)
+        label.setFont(labelFont)
+        label.adjustSize()
+        label.move(round(MainWindow.WIDTH / 2 - label.width() / 2), 660)
+
         button3 = QPushButton('Leave', self)
         button3.setFont(buttonFont)
         button3.adjustSize()
@@ -66,15 +72,19 @@ class MainWindow(QMainWindow):
             return
 
         filename, file_extension = os.path.splitext(file)
-        
+
         if file_extension == '.mp4':
-            on_video(file)
+            filename, okPressed = QInputDialog.getText(self, "Output filename","Enter output file name:", QLineEdit.Normal, "")
+            if okPressed and filename != '':
+                on_video(file, filename)
+            else:
+                on_video(file, 'output', live=False)
         else:
             on_image(file)
 
     @pyqtSlot()
     def open_camera(self):
-        on_video('', live=True)
+        on_video(live=True)
 
 
 def window():
