@@ -50,8 +50,8 @@ def draw_matrix(labels, predicted, cmap):
 
     fig.tight_layout()
 
+    plt.savefig('conf_mat_last.png')
     plt.show()
-    #plt.savefig('konf3.png')
 
 
 
