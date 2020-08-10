@@ -8,6 +8,6 @@
     - [Olivera Popović](https://github.com/popovic-olivera)
     - [Vojislav Mladenović](https://github.com/vojaaja)
 
-- Mentors for the project were Uroš Stegić and Stefan Mojisilović.
+- Mentors for the project were [Uroš Stegić](https://github.com/uros-stegic) and [Stefan Mojisilović](https://github.com/StefanMojsilovic).
 
 - All of the code was written in Python, using PyTorch framework.
