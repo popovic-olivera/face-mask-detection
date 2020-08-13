@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 
 detector = MTCNN(min_face_size=20)
-model = torch.load('models/mobilenet_LRDL_80_20_epochs20_acc0992274.pt', map_location=torch.device('cpu'))
+model = torch.load('models/mobilenet_80_20_epochs20_acc0992274.pt', map_location=torch.device('cpu'))
 
 
 def draw_box(image, resized, faces, labels, probabilities, class_names, video):

@@ -11,3 +11,13 @@
 - Mentors for the project were [Uroš Stegić](https://github.com/uros-stegic) and [Stefan Mojisilović](https://github.com/StefanMojsilovic).
 
 - All of the code was written in Python, using PyTorch framework.
+
+
+## Screenshots
+
+![Application](screenshots/application.png)
+
+
+![Example output on image](screenshots/img_example.png)
+
+![Live stream output example](screenshots/live_example.gif)
